@@ -1,24 +1,46 @@
+set fish_greeting
+
 # PATH first
-if type -q go
-  set -xg PATH (go env GOPATH)/bin $PATH
+set -l paths \
+  "{$HOME}/.cargo" \
+  "{$HOME}/.bin" \
+  "{$HOME}/.local/bin" \
+  "/usr/local/sbin" \
+  "/usr/local/opt/openssl@1.1/bin" \
+
+
+for path in $paths
+  test -d $path && set -g fish_user_paths $path $fish_user_paths || true
 end
 
-if type -q cargo
-  set -xg PATH $HOME/.cargo/bin $PATH
-end
+type -q go && set -g fish_user_paths (go env GOPATH)/bin $fish_user_paths || true
 
-if test -d $HOME/.bin
-  set -xg PATH $HOME/.bin $PATH
-end
+# Then completions
+type -q zoxide && zoxide init fish | source || true
+type -q direnv && direnv hook fish | source || true
+type -q starship && starship init fish | source || true
+type -q deno && deno completions fish | source || true
 
-if test -d $HOME/.local/bin
-  set -xg PATH $HOME/.local/bin $PATH
-end
+# iTerm2
+set -l iterm2_shell_integration {$HOME}/.iterm2_shell_integration.fish
+test -e $iterm2_shell_integration && source $iterm2_shell_integration || true
 
-# Then plug-ins
-if type -q direnv
-  direnv hook fish | source
+# fundle manager: https://github.com/danhper/fundle
+if not functions -q fundle; eval (curl -sfL https://git.io/fundle-install); end
+
+# fundle plugins
+set -l plugins \
+  'edc/bass' \
+  'laughedelic/pisces' \
+  'FabioAntunes/fish-nvm' \
+  # 'reitzig/sdkman-for-fish' \
+  'acomagu/fish-async-prompt' \
+
+
+for plugin in $plugins
+  fundle plugin $plugin
 end
-if type -q starship
-  eval (starship init fish)
-end
+fundle init
+
+# Added by Krypton
+set -x GPG_TTY (tty)
